@@ -1,0 +1,57 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'kvasir'",
+            "env": {
+                "RUST_LOG": "trace"
+            },
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=kvasir",
+                    "--package=kvasir"
+                ],
+                "filter": {
+                    "name": "kvasir",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "parse",
+                "--globs",
+                "test/resources/*.*",
+                "2>&1"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'kvasir'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=kvasir",
+                    "--package=kvasir"
+                ],
+                "filter": {
+                    "name": "kvasir",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "parse",
+                "test/resources/**.**"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
