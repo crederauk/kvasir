@@ -31,6 +31,7 @@ pub fn parsers() -> Vec<Box<dyn FileParser>> {
         Box::new(OpenAPIParser {}),
         Box::new(TomlParser {}),
         Box::new(IniParser {}),
+        Box::new(XmlParser {}),
     ]
 }
 
@@ -164,6 +165,27 @@ impl FileParser for IniParser {
         contents: Result<&str>,
     ) -> Result<Value> {
         Ok(serde_json::to_value(serde_ini::from_str::<Value>(
+            &contents?,
+        )?)?)
+    }
+}
+
+pub struct XmlParser {}
+impl FileParser for XmlParser {
+    fn name(&self) -> &'static str {
+        "xml"
+    }
+
+    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+        has_extension(path, &["xml"])
+    }
+
+    fn parse(
+        &self,
+        #[allow(unused_variables)] path: &PathBuf,
+        contents: Result<&str>,
+    ) -> Result<Value> {
+        Ok(serde_json::to_value(serde_xml_rs::from_str::<Value>(
             &contents?,
         )?)?)
     }

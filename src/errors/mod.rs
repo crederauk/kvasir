@@ -6,6 +6,7 @@ mod errors {
             YamlParse(serde_yaml::Error);
             TomlParse(toml::de::Error);
             IniParse(serde_ini::de::Error);
+            XmlParse(serde_xml_rs::Error);
         }
     }
 }
