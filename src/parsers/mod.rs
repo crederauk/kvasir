@@ -1,6 +1,8 @@
+use super::errors::*;
 use java_properties;
 use openapiv3::OpenAPI;
 use serde::{Deserialize, Serialize};
+use serde_ini;
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
@@ -15,22 +17,10 @@ fn has_extension(path: &PathBuf, extensions: &[&str]) -> bool {
     }
 }
 
-mod errors {
-    error_chain! {
-        foreign_links {
-            Io(std::io::Error);
-            JsonParse(serde_json::Error);
-            YamlParse(serde_yaml::Error);
-            //PropertiesParse(java_properties::PropertiesError);
-        }
-    }
-}
-pub use errors::*;
-
 pub trait FileParser {
     fn name(&self) -> &'static str;
-    fn can_parse(&self, path: &PathBuf) -> bool;
-    fn parse(&self, path: &PathBuf) -> Result<Value>;
+    fn can_parse(&self, path: &PathBuf, contents: Result<&str>) -> bool;
+    fn parse(&self, path: &PathBuf, contents: Result<&str>) -> Result<Value>;
 }
 
 pub fn parsers() -> Vec<Box<dyn FileParser>> {
@@ -39,6 +29,8 @@ pub fn parsers() -> Vec<Box<dyn FileParser>> {
         Box::new(YamlParser {}),
         Box::new(PropertiesParser {}),
         Box::new(OpenAPIParser {}),
+        Box::new(TomlParser {}),
+        Box::new(IniParser {}),
     ]
 }
 
@@ -53,21 +45,24 @@ pub struct ParseSuccess {
 pub struct ParseFailure {
     pub path: PathBuf,
     pub parser: String,
-    pub error: Error,
+    pub error: Error, // Can't implement Serialize/Deserialize
 }
 
 pub struct JsonParser {}
-
 impl FileParser for JsonParser {
     fn name(&self) -> &'static str {
         "json"
     }
 
-    fn can_parse(&self, path: &PathBuf) -> bool {
+    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["json", "tfstate"])
     }
 
-    fn parse(&self, path: &PathBuf) -> Result<Value> {
+    fn parse(
+        &self,
+        path: &PathBuf,
+        #[allow(unused_variables)] contents: Result<&str>,
+    ) -> Result<Value> {
         let contents = fs::read_to_string(path)?;
         Ok(serde_json::from_str(&contents.as_str())?)
     }
@@ -79,13 +74,16 @@ impl FileParser for YamlParser {
         "yaml"
     }
 
-    fn can_parse(&self, path: &PathBuf) -> bool {
+    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["yaml"])
     }
 
-    fn parse(&self, path: &PathBuf) -> Result<Value> {
-        let contents = fs::read_to_string(path)?;
-        Ok(serde_yaml::from_str(&contents.as_str())?)
+    fn parse(
+        &self,
+        #[allow(unused_variables)] path: &PathBuf,
+        contents: Result<&str>,
+    ) -> Result<Value> {
+        Ok(serde_yaml::from_str(&contents?)?)
     }
 }
 
@@ -95,13 +93,16 @@ impl FileParser for PropertiesParser {
         "java-properties"
     }
 
-    fn can_parse(&self, path: &PathBuf) -> bool {
+    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["properties"])
     }
 
-    fn parse(&self, path: &PathBuf) -> Result<Value> {
-        let contents = fs::read_to_string(path)?;
-        match java_properties::read(contents.as_bytes()) {
+    fn parse(
+        &self,
+        #[allow(unused_variables)] path: &PathBuf,
+        contents: Result<&str>,
+    ) -> Result<Value> {
+        match java_properties::read(contents?.as_bytes()) {
             Ok(props) => Ok(serde_json::to_value(props)?),
             Err(error) => Err(error.to_string().into()),
         }
@@ -114,13 +115,61 @@ impl FileParser for OpenAPIParser {
         "openapi-v3"
     }
 
-    fn can_parse(&self, path: &PathBuf) -> bool {
+    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["yaml", "json"])
     }
 
-    fn parse(&self, path: &PathBuf) -> Result<Value> {
-        let contents = fs::read_to_string(path)?;
-        let api: OpenAPI = serde_json::from_str(&contents)?;
+    fn parse(
+        &self,
+        #[allow(unused_variables)] path: &PathBuf,
+        contents: Result<&str>,
+    ) -> Result<Value> {
+        let api: OpenAPI = serde_json::from_str(&contents?)?;
         Ok(serde_json::to_value(api)?)
     }
 }
+
+pub struct TomlParser {}
+impl FileParser for TomlParser {
+    fn name(&self) -> &'static str {
+        "toml"
+    }
+
+    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+        has_extension(path, &["toml"])
+    }
+
+    fn parse(
+        &self,
+        #[allow(unused_variables)] path: &PathBuf,
+        contents: Result<&str>,
+    ) -> Result<Value> {
+        use toml::Value;
+        Ok(serde_json::to_value(&contents?.parse::<Value>()?)?)
+    }
+}
+pub struct IniParser {}
+impl FileParser for IniParser {
+    fn name(&self) -> &'static str {
+        "ini"
+    }
+
+    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+        has_extension(path, &["ini"])
+    }
+
+    fn parse(
+        &self,
+        #[allow(unused_variables)] path: &PathBuf,
+        contents: Result<&str>,
+    ) -> Result<Value> {
+        Ok(serde_json::to_value(serde_ini::from_str::<Value>(
+            &contents?,
+        )?)?)
+    }
+}
+
+// HOCON Parser
+// INI Parser
+// GRPC Parser
+// XML Parser

@@ -1,16 +1,19 @@
-use glob::GlobError;
-use itertools::{Either, Itertools};
-use log::{debug, info, warn};
-use parsers::FileParser;
-use std::path::PathBuf;
-use structopt::StructOpt;
-
-use crate::parsers::{ParseFailure, ParseSuccess};
-
+mod errors;
 mod parsers;
 
 #[macro_use]
 extern crate error_chain;
+
+use errors::Error;
+use glob::GlobError;
+use itertools::{Either, Itertools};
+use log::{debug, info, warn};
+use once_cell::unsync::OnceCell;
+use parsers::FileParser;
+use parsers::{ParseFailure, ParseSuccess};
+use std::fs;
+use std::{path::PathBuf, str};
+use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -100,14 +103,21 @@ fn parse_file(
     parsers: &Vec<Box<dyn FileParser>>,
 ) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
     info!("Parsing: {}", f.display());
+
+    let contents: OnceCell<String> = OnceCell::new();
+    let get_contents = || -> Result<&str, Error> {
+        let c = contents.get_or_try_init(|| fs::read_to_string(f))?;
+        Ok(c.as_str())
+    };
+
     let (parsed, errors): (Vec<ParseSuccess>, Vec<ParseFailure>) = parsers
         .iter()
-        .filter(|p| p.can_parse(f))
+        .filter(|p| p.can_parse(f, get_contents()))
         .map(|p| {
             debug!("  parseable with {} parser", p.name());
             p
         })
-        .partition_map(|p| match p.parse(f) {
+        .partition_map(|p| match p.parse(f, get_contents()) {
             Ok(c) => Either::Left(ParseSuccess {
                 path: f.to_owned(),
                 parser: p.name().to_owned(),
