@@ -41,6 +41,8 @@ enum Command {
         #[structopt(short, long)]
         templates: Option<Vec<String>>,
     },
+
+    Parsers {},
 }
 
 fn main() {
@@ -61,6 +63,7 @@ fn main() {
                 .for_each(|e| warn!("Error listing file: {}", e));
 
             let available_parsers = parsers::parsers();
+
             let (successes, failures): (Vec<ParseSuccess>, Vec<ParseFailure>) = files
                 .iter()
                 .map(|f| parse_file(f, &available_parsers))
@@ -84,6 +87,9 @@ fn main() {
             println!("{}", serde_json::to_string_pretty(&successes).unwrap())
         }
         Command::Document { globs, templates } => println!("Something else was chosen!"),
+        Command::Parsers {} => parsers::parsers()
+            .iter()
+            .for_each(|p| println!("{}", p.name())),
     }
 }
 

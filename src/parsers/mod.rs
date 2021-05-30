@@ -215,3 +215,13 @@ impl FileParser for HoconParser {
 }
 
 // GRPC Parser
+
+#[cfg(test)]
+mod tests {
+    use crate::parsers;
+
+    #[test]
+    fn available_parsers() {
+        assert_eq!(parsers::parsers().len(), 8)
+    }
+}
