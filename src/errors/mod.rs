@@ -7,6 +7,7 @@ mod errors {
             TomlParse(toml::de::Error);
             IniParse(serde_ini::de::Error);
             XmlParse(serde_xml_rs::Error);
+            HoconParse(hocon::Error);
         }
     }
 }

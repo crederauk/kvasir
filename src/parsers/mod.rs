@@ -1,4 +1,5 @@
 use super::errors::*;
+use hocon::HoconLoader;
 use java_properties;
 use openapiv3::OpenAPI;
 use serde::{Deserialize, Serialize};
@@ -32,6 +33,7 @@ pub fn parsers() -> Vec<Box<dyn FileParser>> {
         Box::new(TomlParser {}),
         Box::new(IniParser {}),
         Box::new(XmlParser {}),
+        Box::new(HoconParser {}),
     ]
 }
 
@@ -191,7 +193,25 @@ impl FileParser for XmlParser {
     }
 }
 
-// HOCON Parser
-// INI Parser
+pub struct HoconParser {}
+impl FileParser for HoconParser {
+    fn name(&self) -> &'static str {
+        "hocon"
+    }
+
+    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+        has_extension(path, &["conf"])
+    }
+
+    fn parse(
+        &self,
+        #[allow(unused_variables)] path: &PathBuf,
+        contents: Result<&str>,
+    ) -> Result<Value> {
+        Ok(serde_json::to_value(
+            HoconLoader::new().load_str(&contents?)?.resolve()?,
+        )?)
+    }
+}
+
 // GRPC Parser
-// XML Parser
