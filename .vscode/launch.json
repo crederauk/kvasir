@@ -7,9 +7,9 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'kvasir'",
+            "name": "Debug executable 'kvasir parse'",
             "env": {
-                "RUST_LOG": "trace"
+                "RUST_LOG": "main=trace"
             },
             "cargo": {
                 "args": [
@@ -27,6 +27,37 @@
                 "--globs",
                 "test/resources/*.*",
                 "2>&1"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'kvasir document'",
+            "env": {
+                "RUST_LOG": "kvasir=trace"
+            },
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=kvasir",
+                    "--package=kvasir"
+                ],
+                "filter": {
+                    "name": "kvasir",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "document",
+                "--globs",
+                "test/resources/*.*",
+                "--templates",
+                "test/templates/*.tpl",
+                "--base",
+                "base.tpl",
+                //"2>&1"
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
