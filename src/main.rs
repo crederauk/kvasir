@@ -18,36 +18,61 @@ use structopt::StructOpt;
 use tera::Context;
 
 #[derive(Debug, StructOpt)]
-#[structopt(
-    name = "kvasir",
-    about = "Kvasir automated documentation parser",
-    version = "0.1"
-)]
+#[structopt(name = "kvasir", version = "0.1")]
+/// kvasir - source file parser and template generator
+///
+/// kvasir is a tool for parsing multiple types of source files into JSON format, either
+/// outputting directly to stdout or processing the data through one or more templates
+/// to generate different output formats.
+///
+/// Rather than focus on source code file formats (like Java, Python and Go) for which
+/// documentation tools already exist, kvasir is intended to parse and document
+/// configuration and human-readable file formats such as YAML, XML, OpenAPI and JSON.
+/// With the ability to parse these formats into a single structure, it's possible to
+/// generate more flexible output.
+///
+/// It can be run directly or within CI/CD pipelines to generate and embed
+/// documentation into markdown files, READMEs or other documentation tools.
+///
+/// EXAMPLES:
+///     kvasir parse --globs /path/to/**/*.yaml /path/to/**/*.xml
+///     kvasir document --globs /path/to/**/*.yaml --templates templates/base.tpl
 struct CLOptions {
     #[structopt(short, long)]
-    debug: bool,
+    /// Enable verbose application output (change log level to *debug*)
+    verbose: bool,
     #[structopt(subcommand)]
+    /// Subcommand to run
     cmd: Command,
 }
 
 #[derive(Debug, StructOpt)]
 enum Command {
+    /// Parse one or more source files into a single JSON structure.
     Parse {
         #[structopt(short, long)]
+        /// One or more glob path expressions to search for source files.
         globs: Vec<String>,
     },
 
+    /// Parse one or more source files into a single JSON structure and format the structure using the
+    /// specified templates.
     Document {
         #[structopt(short, long)]
+        /// One or more glob path expressions to search for source files.
         globs: Vec<String>,
         #[structopt(short, long)]
+        /// A glob path expression to search for template files
         templates: String,
         #[structopt(short, long)]
+        /// Relative path to the base template, if more than one are found by the template glob expression.
         base: Option<String>,
+        /// Delimiter to search for in the template output to split files.
         #[structopt(short, long)]
         file_split_delimiter: Option<String>,
     },
 
+    /// List available file format parsers.
     Parsers {},
 }
 
