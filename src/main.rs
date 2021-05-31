@@ -5,6 +5,7 @@ mod templates;
 #[macro_use]
 extern crate error_chain;
 
+use env_logger::{Env, Logger};
 use errors::Error;
 use glob::GlobError;
 use itertools::{Either, Itertools};
@@ -39,10 +40,10 @@ use tera::Context;
 ///     kvasir document --globs /path/to/**/*.yaml --templates templates/base.tpl
 struct CLOptions {
     #[structopt(short, long)]
-    /// Enable verbose application output (change log level to *debug*)
-    verbose: bool,
+    /// Enable debug application output.
+    debug: bool,
     #[structopt(subcommand)]
-    /// Subcommand to run
+    /// Subcommand to run.
     cmd: Command,
 }
 
@@ -76,12 +77,26 @@ enum Command {
     Parsers {},
 }
 
-fn main() {
-    // Initialise the logger
-    env_logger::init();
-    println!("Log level: {}", log::max_level());
+/// Initialise the logging environment.
+fn logger_environment(verbose: bool) -> Env<'static> {
+    env_logger::Env::new()
+        .filter_or(
+            "KVASIR_LOG",
+            if verbose {
+                "kvasir=trace"
+            } else {
+                "kvasir=error"
+            },
+        )
+        .write_style("KVASIR_LOG_STYLE")
+}
 
+fn main() {
     let opts = CLOptions::from_args();
+
+    // Initialise the logger
+    env_logger::init_from_env(logger_environment(opts.debug));
+
     match opts.cmd {
         Command::Parse { globs } => {
             let (successes, failures) = parse_files(globs);
