@@ -130,7 +130,7 @@ fn get_base_template(
 fn parse_files(globs: Vec<String>) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
     let (files, errors) = list_files(globs);
 
-    info!("Files to process: {}", &files.len());
+    info!("{} files to process.", &files.len());
 
     // List errors without exiting
     errors
@@ -148,11 +148,11 @@ fn parse_files(globs: Vec<String>) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
             (last.0, last.1)
         });
 
-    info!("Successful parsers: {}", &successes.len());
-    info!("Failed parsers: {}", &failures.len());
+    info!("{} parsers ran successfully.", &successes.len());
+    info!("{} parsers failed.", &failures.len());
     failures.iter().for_each(|f| {
         warn!(
-            "{}: failed parsing with {} ({})",
+            "{}: failed parsing with {} parser ({})",
             &f.path.display(),
             &f.parser,
             &f.error.to_string()
@@ -177,7 +177,7 @@ fn parse_file(
     f: &PathBuf,
     parsers: &Vec<Box<dyn FileParser>>,
 ) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
-    info!("Parsing: {}", f.display());
+    info!("{}: parsing", f.display());
 
     let contents: OnceCell<String> = OnceCell::new();
     let get_contents = || -> Result<&str, Error> {
