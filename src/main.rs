@@ -5,7 +5,7 @@ mod templates;
 #[macro_use]
 extern crate error_chain;
 
-use env_logger::{Env, Logger};
+use env_logger::Env;
 use errors::Error;
 use glob::GlobError;
 use itertools::{Either, Itertools};
@@ -51,23 +51,23 @@ struct CLOptions {
 enum Command {
     /// Parse one or more source files into a single JSON structure.
     Parse {
-        #[structopt(short, long)]
+        #[structopt(long)]
         /// One or more glob path expressions to search for source files.
-        globs: Vec<String>,
+        sources: Vec<String>,
     },
 
     /// Parse one or more source files into a single JSON structure and format the structure using the
     /// specified templates.
     Document {
-        #[structopt(short, long)]
+        #[structopt(long)]
         /// One or more glob path expressions to search for source files.
-        globs: Vec<String>,
+        sources: Vec<String>,
         #[structopt(short, long)]
         /// A glob path expression to search for template files
         templates: String,
         #[structopt(short, long)]
         /// Relative path to the base template, if more than one are found by the template glob expression.
-        base: Option<String>,
+        base_template: Option<String>,
         /// Delimiter to search for in the template output to split files.
         #[structopt(short, long)]
         file_split_delimiter: Option<String>,
@@ -98,14 +98,14 @@ fn main() {
     env_logger::init_from_env(logger_environment(opts.debug));
 
     match opts.cmd {
-        Command::Parse { globs } => {
+        Command::Parse { sources: globs } => {
             let (successes, failures) = parse_files(globs);
             println!("{}", serde_json::to_string_pretty(&successes).unwrap())
         }
         Command::Document {
-            globs,
+            sources: globs,
             templates,
-            base,
+            base_template: base,
             file_split_delimiter,
         } => {
             use tera::Tera;
@@ -146,7 +146,7 @@ fn main() {
 fn get_base_template(
     template_expr: String,
     template_names: &[&str],
-    base: Option<String>,
+    base_template: Option<String>,
 ) -> Option<String> {
     match template_names {
         [] => {
@@ -154,7 +154,7 @@ fn get_base_template(
             None
         }
         [single] => Some(single.to_string()),
-        [first, ..] => Some(base.map_or_else(
+        [first, ..] => Some(base_template.map_or_else(
             || {
                 warn!(
                     "No base template specified. Using first template: {}",

@@ -8,9 +8,6 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug executable 'kvasir parse'",
-            "env": {
-                "RUST_LOG": "main=trace"
-            },
             "cargo": {
                 "args": [
                     "build",
@@ -24,7 +21,7 @@
             },
             "args": [
                 "parse",
-                "--globs",
+                "--sources",
                 "test/resources/*.*",
                 "2>&1"
             ],
@@ -35,9 +32,6 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug executable 'kvasir document'",
-            "env": {
-                "RUST_LOG": "kvasir=trace"
-            },
             "cargo": {
                 "args": [
                     "build",
@@ -50,12 +44,13 @@
                 }
             },
             "args": [
+                "--debug",
                 "document",
-                "--globs",
+                "--sources",
                 "test/resources/*.*",
                 "--templates",
                 "test/templates/*.tpl",
-                "--base",
+                "--base-template",
                 "base.tpl",
                 //"2>&1"
             ],
