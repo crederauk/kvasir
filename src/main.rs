@@ -83,9 +83,9 @@ fn logger_environment(verbose: bool) -> Env<'static> {
         .filter_or(
             "KVASIR_LOG",
             if verbose {
-                "kvasir=trace"
+                "kvasir=debug"
             } else {
-                "kvasir=error"
+                "kvasir=warn"
             },
         )
         .write_style("KVASIR_LOG_STYLE")
@@ -188,17 +188,8 @@ fn parse_files(globs: Vec<String>) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
             (last.0, last.1)
         });
 
-    info!("{} parsers ran successfully.", &successes.len());
+    info!("{} parsers succeeded.", &successes.len());
     info!("{} parsers failed.", &failures.len());
-    failures.iter().for_each(|f| {
-        warn!(
-            "{}: failed parsing with {} parser ({})",
-            &f.path.display(),
-            &f.parser,
-            &f.error.to_string()
-        )
-    });
-
     return (successes, failures);
 }
 
@@ -217,7 +208,7 @@ fn parse_file(
     f: &PathBuf,
     parsers: &Vec<Box<dyn FileParser>>,
 ) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
-    info!("{}: parsing", f.display());
+    info!("{}:", f.display());
 
     let contents: OnceCell<String> = OnceCell::new();
     let get_contents = || -> Result<&str, Error> {
@@ -228,21 +219,24 @@ fn parse_file(
     let (parsed, errors): (Vec<ParseSuccess>, Vec<ParseFailure>) = parsers
         .iter()
         .filter(|p| p.can_parse(f, get_contents()))
-        .map(|p| {
-            debug!("  parseable with {} parser", p.name());
-            p
-        })
+        .map(|p| p)
         .partition_map(|p| match p.parse(f, get_contents()) {
-            Ok(c) => Either::Left(ParseSuccess {
-                path: f.to_owned(),
-                parser: p.name().to_owned(),
-                contents: c,
-            }),
-            Err(e) => Either::Right(ParseFailure {
-                path: f.to_owned(),
-                parser: p.name().to_owned(),
-                error: e,
-            }),
+            Ok(c) => {
+                debug!("  succeeded parsing with {}.", p.name());
+                Either::Left(ParseSuccess {
+                    path: f.to_owned(),
+                    parser: p.name().to_owned(),
+                    contents: c,
+                })
+            }
+            Err(e) => {
+                warn!("  failed parsing with {} ({}).", p.name(), e.to_string());
+                Either::Right(ParseFailure {
+                    path: f.to_owned(),
+                    parser: p.name().to_owned(),
+                    error: e,
+                })
+            }
         });
 
     (parsed, errors)
