@@ -18,7 +18,7 @@
 
 //! kvasir - source file parser and template generator
 //!
-//! kvasir is a tool for parsing multiple types of source files into JSON format, either
+//! kvasir is a tool for parsing structured text files into JSON format, either
 //! outputting directly to stdout or processing the data through one or more templates
 //! to generate different output formats.
 //!
@@ -32,7 +32,7 @@
 //! documentation into markdown files, READMEs or other documentation tools.
 //!
 //! EXAMPLES:
-//!```rust
+//!```bash
 //!     kvasir parse --globs /path/to/**/*.yaml /path/to/**/*.xml
 //!     kvasir document --globs /path/to/**/*.yaml --templates templates/base.tpl
 //!```
@@ -53,7 +53,7 @@ use once_cell::unsync::OnceCell;
 use parsers::FileParser;
 use parsers::{ParseFailure, ParseSuccess};
 use std::fs;
-use std::{path::PathBuf, str};
+use std::{path::Path, path::PathBuf, str};
 use structopt::StructOpt;
 use tera::Context;
 
@@ -61,7 +61,7 @@ use tera::Context;
 #[structopt(name = "kvasir", version = "0.1")]
 /// kvasir - source file parser and template generator
 ///
-/// kvasir is a tool for parsing multiple types of source files into JSON format, either
+/// kvasir is a tool for parsing structured text files into JSON format, either
 /// outputting directly to stdout or processing the data through one or more templates
 /// to generate different output formats.
 ///
@@ -140,7 +140,7 @@ fn main() {
 
     match opts.cmd {
         Command::Parse { sources: globs } => {
-            let (successes, failures) = parse_files(globs);
+            let (successes, _failures) = parse_files(globs);
             println!("{}", serde_json::to_string_pretty(&successes).unwrap())
         }
         Command::Document {
@@ -161,8 +161,8 @@ fn main() {
                     // Add filters
                     tera.register_filter("jsonPath", templates::filters::json_path);
 
-                    base_template.map(|template| {
-                        let (successes, failures) = parse_files(globs);
+                    if let Some(template) = base_template {
+                        let (successes, _failures) = parse_files(globs);
                         let mut context = Context::new();
                         context.insert("files", &successes);
                         println!(
@@ -173,7 +173,7 @@ fn main() {
                                     "".to_string()
                                 })
                         )
-                    });
+                    };
                 }
                 Err(e) => error!("Could not parse templates: {:?}", e),
             }
@@ -237,7 +237,8 @@ fn parse_files(globs: Vec<String>) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
 
     info!("{} parsers succeeded.", &successes.len());
     info!("{} parsers failed.", &failures.len());
-    return (successes, failures);
+
+    (successes, failures)
 }
 
 /// Return a list of all unique paths that match one or more glob expressions.
@@ -267,10 +268,7 @@ fn list_files(globs: Vec<String>) -> (Vec<PathBuf>, Vec<GlobError>) {
 /// File contents are available to both the parsing and parse check code. The contents are
 /// retrieved in an efficient fashion so that they are never read more than once. Files
 /// are read fully into memory.
-fn parse_file(
-    f: &PathBuf,
-    parsers: &Vec<Box<dyn FileParser>>,
-) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
+fn parse_file(f: &Path, parsers: &[Box<dyn FileParser>]) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
     info!("{}:", f.display());
 
     let contents: OnceCell<String> = OnceCell::new();
@@ -282,7 +280,6 @@ fn parse_file(
     let (parsed, errors): (Vec<ParseSuccess>, Vec<ParseFailure>) = parsers
         .iter()
         .filter(|p| p.can_parse(f, get_contents()))
-        .map(|p| p)
         .partition_map(|p| match p.parse(f, get_contents()) {
             Ok(c) => {
                 debug!("  succeeded parsing with {}.", p.name());

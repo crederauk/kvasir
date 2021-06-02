@@ -16,16 +16,14 @@
 
 use super::errors::*;
 use hocon::HoconLoader;
-use java_properties;
 use openapiv3::OpenAPI;
 use serde::{Deserialize, Serialize};
-use serde_ini;
 use serde_json::Value;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Return whether a path has one of the list of specified extensions.
-fn has_extension(path: &PathBuf, extensions: &[&str]) -> bool {
+fn has_extension(path: &Path, extensions: &[&str]) -> bool {
     match path.extension() {
         Some(ext) => ext.to_str().map_or(false, |e| extensions.contains(&e)),
         None => false,
@@ -42,10 +40,10 @@ pub trait FileParser {
     /// This check is not intended to be expensive. Whilst the contents of the
     /// file are available for use if required, use the path alone wherever
     /// possible to minimise IO.
-    fn can_parse(&self, path: &PathBuf, contents: Result<&str>) -> bool;
+    fn can_parse(&self, path: &Path, contents: Result<&str>) -> bool;
 
     /// Parse a file and return a JSON result or an explanatory error.
-    fn parse(&self, path: &PathBuf, contents: Result<&str>) -> Result<Value>;
+    fn parse(&self, path: &Path, contents: Result<&str>) -> Result<Value>;
 }
 
 /// Return a list of available file parser instances.
@@ -85,13 +83,13 @@ impl FileParser for JsonParser {
         "json"
     }
 
-    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+    fn can_parse(&self, path: &Path, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["json", "tfstate"])
     }
 
     fn parse(
         &self,
-        path: &PathBuf,
+        path: &Path,
         #[allow(unused_variables)] contents: Result<&str>,
     ) -> Result<Value> {
         let contents = fs::read_to_string(path)?;
@@ -106,13 +104,13 @@ impl FileParser for YamlParser {
         "yaml"
     }
 
-    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+    fn can_parse(&self, path: &Path, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["yaml"])
     }
 
     fn parse(
         &self,
-        #[allow(unused_variables)] path: &PathBuf,
+        #[allow(unused_variables)] path: &Path,
         contents: Result<&str>,
     ) -> Result<Value> {
         Ok(serde_yaml::from_str(&contents?)?)
@@ -126,13 +124,13 @@ impl FileParser for PropertiesParser {
         "java-properties"
     }
 
-    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+    fn can_parse(&self, path: &Path, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["properties"])
     }
 
     fn parse(
         &self,
-        #[allow(unused_variables)] path: &PathBuf,
+        #[allow(unused_variables)] path: &Path,
         contents: Result<&str>,
     ) -> Result<Value> {
         match java_properties::read(contents?.as_bytes()) {
@@ -149,13 +147,13 @@ impl FileParser for OpenAPIParser {
         "openapi-v3"
     }
 
-    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+    fn can_parse(&self, path: &Path, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["yaml", "json"])
     }
 
     fn parse(
         &self,
-        #[allow(unused_variables)] path: &PathBuf,
+        #[allow(unused_variables)] path: &Path,
         contents: Result<&str>,
     ) -> Result<Value> {
         let api: OpenAPI = serde_json::from_str(&contents?)?;
@@ -170,13 +168,13 @@ impl FileParser for TomlParser {
         "toml"
     }
 
-    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+    fn can_parse(&self, path: &Path, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["toml"])
     }
 
     fn parse(
         &self,
-        #[allow(unused_variables)] path: &PathBuf,
+        #[allow(unused_variables)] path: &Path,
         contents: Result<&str>,
     ) -> Result<Value> {
         use toml::Value;
@@ -191,13 +189,13 @@ impl FileParser for IniParser {
         "ini"
     }
 
-    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+    fn can_parse(&self, path: &Path, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["ini"])
     }
 
     fn parse(
         &self,
-        #[allow(unused_variables)] path: &PathBuf,
+        #[allow(unused_variables)] path: &Path,
         contents: Result<&str>,
     ) -> Result<Value> {
         Ok(serde_json::to_value(serde_ini::from_str::<Value>(
@@ -213,13 +211,13 @@ impl FileParser for XmlParser {
         "xml"
     }
 
-    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+    fn can_parse(&self, path: &Path, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["xml"])
     }
 
     fn parse(
         &self,
-        #[allow(unused_variables)] path: &PathBuf,
+        #[allow(unused_variables)] path: &Path,
         contents: Result<&str>,
     ) -> Result<Value> {
         Ok(serde_json::to_value(serde_xml_rs::from_str::<Value>(
@@ -235,13 +233,13 @@ impl FileParser for HoconParser {
         "hocon"
     }
 
-    fn can_parse(&self, path: &PathBuf, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+    fn can_parse(&self, path: &Path, #[allow(unused_variables)] contents: Result<&str>) -> bool {
         has_extension(path, &["conf"])
     }
 
     fn parse(
         &self,
-        #[allow(unused_variables)] path: &PathBuf,
+        #[allow(unused_variables)] path: &Path,
         contents: Result<&str>,
     ) -> Result<Value> {
         Ok(serde_json::to_value(
