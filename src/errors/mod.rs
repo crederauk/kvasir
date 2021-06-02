@@ -1,4 +1,5 @@
 mod errors {
+    //! Error chain providing a wrapper around several error types.
     error_chain! {
         foreign_links {
             Io(std::io::Error);

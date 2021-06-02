@@ -1,3 +1,26 @@
+#![warn(missing_docs)]
+
+//! kvasir - source file parser and template generator
+//!
+//! kvasir is a tool for parsing multiple types of source files into JSON format, either
+//! outputting directly to stdout or processing the data through one or more templates
+//! to generate different output formats.
+//!
+//! Rather than focus on source code file formats (like Java, Python and Go) for which
+//! documentation tools already exist, kvasir is intended to parse and document
+//! configuration and human-readable file formats such as YAML, XML, OpenAPI and JSON.
+//! With the ability to parse these formats into a single structure, it's possible to
+//! generate more flexible output.
+//!
+//! It can be run directly or within CI/CD pipelines to generate and embed
+//! documentation into markdown files, READMEs or other documentation tools.
+//!
+//! EXAMPLES:
+//!```rust
+//!     kvasir parse --globs /path/to/**/*.yaml /path/to/**/*.xml
+//!     kvasir document --globs /path/to/**/*.yaml --templates templates/base.tpl
+//!```
+
 mod errors;
 mod parsers;
 mod templates;
@@ -48,6 +71,7 @@ struct CLOptions {
 }
 
 #[derive(Debug, StructOpt)]
+/// Command line sub-command to execute
 enum Command {
     /// Parse one or more source files into a single JSON structure.
     Parse {
@@ -91,6 +115,7 @@ fn logger_environment(verbose: bool) -> Env<'static> {
         .write_style("KVASIR_LOG_STYLE")
 }
 
+/// Application entry point.
 fn main() {
     let opts = CLOptions::from_args();
 
@@ -143,6 +168,7 @@ fn main() {
     }
 }
 
+/// Find the base template to use, based on the number of templates and user choice.
 fn get_base_template(
     template_expr: String,
     template_names: &[&str],
@@ -157,7 +183,7 @@ fn get_base_template(
         [first, ..] => Some(base_template.map_or_else(
             || {
                 warn!(
-                    "No base template specified. Using first template: {}",
+                    "No base template specified. Using first template found: {}",
                     first
                 );
                 first.to_string()
@@ -167,6 +193,11 @@ fn get_base_template(
     }
 }
 
+/// Parse a list of files using one or more parsers, returning a list of successes and failures.
+///
+/// Each file is provided to each parser in turn, first to check whether it can be parsed and
+/// then to attempt to parse it. Parsing errors are not fatal and do not prevent continuing
+/// parsing remaining files.
 fn parse_files(globs: Vec<String>) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
     let (files, errors) = list_files(globs);
 
@@ -193,17 +224,33 @@ fn parse_files(globs: Vec<String>) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
     return (successes, failures);
 }
 
+/// Return a list of all unique paths that match one or more glob expressions.
+///
+/// Paths which appear in more than one glob expression are de-duplicated.
 fn list_files(globs: Vec<String>) -> (Vec<PathBuf>, Vec<GlobError>) {
     globs
         .iter()
         .flat_map(|g| glob::glob(g))
         .flatten()
+        .unique_by(|r| match r {
+            Ok(p) => p.to_owned(),
+            Err(e) => e.path().to_path_buf(),
+        })
         .partition_map(|r| match r {
             Ok(v) => Either::Left(v),
             Err(v) => Either::Right(v),
         })
 }
 
+/// Parse a file with one or more file parsers, returning a list of successes and failures.
+///
+/// Each file is first checked to see whether it *can* be parsed by a given file parser,
+/// which is intended to be a computationally and IO-cheap activity. Parsers which indicate
+/// that they can parse a file are then called to parse it into a JSON structure.
+///
+/// File contents are available to both the parsing and parse check code. The contents are
+/// retrieved in an efficient fashion so that they are never read more than once. Files
+/// are read fully into memory.
 fn parse_file(
     f: &PathBuf,
     parsers: &Vec<Box<dyn FileParser>>,
