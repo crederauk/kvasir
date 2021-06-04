@@ -52,10 +52,17 @@ use log::{debug, error, info, warn};
 use once_cell::unsync::OnceCell;
 use parsers::FileParser;
 use parsers::{ParseFailure, ParseSuccess};
+use path_clean::PathClean;
 use std::fs;
 use std::{path::Path, path::PathBuf, str};
 use structopt::StructOpt;
 use tera::Context;
+
+/// OS-specific line endings
+#[cfg(windows)]
+const LINE_ENDING: &str = "\r\n";
+#[cfg(not(windows))]
+const LINE_ENDING: &str = "\n";
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "kvasir", version = "0.1")]
@@ -106,11 +113,20 @@ enum Command {
         /// A glob path expression to search for template files
         templates: String,
         #[structopt(short, long)]
-        /// Relative path to the base template, if more than one are found by the template glob expression.
-        base_template: Option<String>,
+        /// Relative path to the root template, if more than one is found by the template glob expression.
+        root_template: Option<String>,
+        /// Whether to write the template output to multiple files, split by the provided delimiter.
+        #[structopt(long)]
+        split_files: bool,
         /// Delimiter to search for in the template output to split files.
-        #[structopt(short, long)]
-        file_split_delimiter: Option<String>,
+        #[structopt(long, default_value = "8<--")]
+        split_delimiter: String,
+        /// Root directory under which split output files are written. Defaults to the current directory.
+        #[structopt(long)]
+        output_dir: Option<String>,
+        // Allow overwriting existing files when splitting output files.
+        #[structopt(long)]
+        allow_overwrite: bool,
     },
 
     /// List available file format parsers.
@@ -132,7 +148,7 @@ fn logger_environment(verbose: bool) -> Env<'static> {
 }
 
 /// Application entry point.
-fn main() {
+fn main() -> Result<(), Error> {
     let opts = CLOptions::from_args();
 
     // Initialise the logger
@@ -146,34 +162,42 @@ fn main() {
         Command::Document {
             sources: globs,
             templates,
-            base_template: base,
-            file_split_delimiter,
+            root_template: base,
+            split_files,
+            split_delimiter,
+            output_dir,
+            allow_overwrite,
         } => {
-            use tera::Tera;
-            match Tera::new(templates.as_str()).as_mut() {
+            match tera::Tera::new(templates.as_str()).as_mut() {
                 Ok(tera) => {
-                    let base_template = get_base_template(
+                    let root_template = get_base_template(
                         templates,
                         tera.get_template_names().collect_vec().as_slice(),
                         base,
                     );
-
-                    // Add filters
-                    tera.register_filter("jsonPath", templates::filters::json_path);
-
-                    if let Some(template) = base_template {
+                    if let Some(template) = root_template {
+                        // Add custom filters
+                        register_tera_filters(tera);
                         let (successes, _failures) = parse_files(globs);
-                        let mut context = Context::new();
-                        context.insert("files", &successes);
-                        println!(
-                            "{}",
-                            tera.render(template.as_str(), &context)
-                                .unwrap_or_else(|e| {
-                                    error!("Could not render template: {:?}", e);
-                                    "".to_string()
-                                })
-                        )
-                    };
+                        let rendered_contents = render_template(tera, &template, successes);
+                        if split_files {
+                            match split_template_content(
+                                split_delimiter.as_str(),
+                                rendered_contents.as_str(),
+                                output_dir.map_or_else(
+                                    || std::env::current_dir().unwrap(),
+                                    |p| Path::new(p.as_str()).to_path_buf(),
+                                ),
+                            ) {
+                                Ok(entries) => write_rendered_files(entries, allow_overwrite),
+                                Err(e) => {
+                                    error!("Could not split template content: {}", e.to_string())
+                                }
+                            };
+                        } else {
+                            println!("{}", rendered_contents);
+                        }
+                    }
                 }
                 Err(e) => error!("Could not parse templates: {:?}", e),
             }
@@ -182,6 +206,91 @@ fn main() {
             .iter()
             .for_each(|p| println!("{}", p.name())),
     }
+    Ok(())
+}
+
+/// Write rendered templates information to one or more files.
+///
+/// By default, this function will refuse to overwrite existing files unless
+/// `allow_overwrite` is set.
+fn write_rendered_files(entries: Vec<(PathBuf, String)>, allow_overwrite: bool) {
+    entries.iter().for_each(|(file, content)| {
+        if (file.exists() && allow_overwrite) || !file.exists() {
+            debug!("Writing output file {}", file.display());
+            match std::fs::create_dir_all(file.parent().unwrap())
+                .and_then(|_| fs::write(file, content))
+            {
+                Ok(_) => (),
+                Err(e) => error!(
+                    "Could not write output file {}: {}",
+                    file.display(),
+                    e.to_string()
+                ),
+            }
+        } else {
+            error!(
+                "Could not write output file {}: File exists.",
+                file.display()
+            )
+        }
+    })
+}
+
+/// Split the contents of the output template into a list of paths and contents using the
+/// specified delimiter.
+///
+/// The default base output directory is the current directory, chosen to avoid the
+/// possibility of overwriting abitrary files. All output files must be within the
+/// output directory or an error will be generated.
+fn split_template_content(
+    delimiter: &str,
+    contents: &str,
+    output_dir: PathBuf,
+) -> Result<Vec<(PathBuf, String)>, Error> {
+    if !output_dir.is_dir() {
+        bail!("Output directory must exist and be a directory.");
+    }
+
+    let files = contents
+        .split(delimiter)
+        // Parse the destination path name and template contents
+        .map(|f| match f.lines().collect_vec().as_slice() {
+            [first, remaining @ ..] => {
+                let of = Path::new(&output_dir).join(Path::new(first.trim())).clean();
+
+                Some((of, remaining.join(LINE_ENDING)))
+            }
+            [] => None,
+        })
+        .filter(|x| x.is_some())
+        .map(|x| x.unwrap())
+        .collect_vec();
+
+    for (p, _) in files.iter() {
+        if !p.starts_with(&output_dir) {
+            bail!(format!(
+                "Output file {} is not a child of {}",
+                p.display(),
+                output_dir.display()
+            ))
+        }
+    }
+
+    Ok(files)
+}
+
+/// Register custom tera filters
+fn register_tera_filters(tera: &mut tera::Tera) {
+    tera.register_filter("jsonPath", templates::filters::json_path);
+}
+
+fn render_template(tera: &tera::Tera, root_template: &str, successes: Vec<ParseSuccess>) -> String {
+    let mut context = Context::new();
+    context.insert("files", &successes);
+    tera.render(&root_template, &context).unwrap_or_else(|e| {
+        error!("Could not render template: {:?}", e);
+        "".to_string()
+    })
 }
 
 /// Find the base template to use, based on the number of templates and user choice.

@@ -50,7 +50,7 @@
                 "test/resources/*.*",
                 "--templates",
                 "test/templates/*.tpl",
-                "--base-template",
+                "--root-template",
                 "base.tpl",
                 //"2>&1"
             ],
@@ -78,6 +78,36 @@
                 "test/resources/**.**"
             ],
             "cwd": "${workspaceFolder}"
-        }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'kvasir document split files'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=kvasir",
+                    "--package=kvasir"
+                ],
+                "filter": {
+                    "name": "kvasir",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "--debug",
+                "document",
+                "--sources",
+                "test/resources/*.*",
+                "--templates",
+                "test/templates/*.tpl",
+                "--root-template",
+                "base.tpl",
+                "--split-files"
+                //"2>&1"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
     ]
 }
