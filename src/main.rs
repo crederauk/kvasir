@@ -177,7 +177,7 @@ fn main() -> Result<(), Error> {
                     );
                     if let Some(template) = root_template {
                         // Add custom filters
-                        register_tera_filters(tera);
+                        templates::filters::register_filters(tera);
                         let (successes, _failures) = parse_files(globs);
                         let rendered_contents = render_template(tera, &template, successes);
                         if split_files {
@@ -277,11 +277,6 @@ fn split_template_content(
     }
 
     Ok(files)
-}
-
-/// Register custom tera filters
-fn register_tera_filters(tera: &mut tera::Tera) {
-    tera.register_filter("jsonPath", templates::filters::json_path);
 }
 
 fn render_template(tera: &tera::Tera, root_template: &str, successes: Vec<ParseSuccess>) -> String {
