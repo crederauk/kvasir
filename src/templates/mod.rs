@@ -12,6 +12,7 @@ pub mod filters {
         tera.register_filter("jsonPath", json_path);
         tera.register_filter("filename", filename);
         tera.register_filter("extension", extension);
+        tera.register_filter("directory", directory);
     }
 
     /// Return a JSON value by applying the provided JSON path to the provided ihput value.
@@ -46,6 +47,18 @@ pub mod filters {
         )?)
     }
 
+    /// Return the directory of a path.
+    pub fn directory(
+        value: &Value,
+        #[allow(unused_variables)] params: &HashMap<String, Value>,
+    ) -> tera::Result<Value> {
+        Ok(to_value(
+            Path::new(&value.as_str().ok_or("Path must be a string")?)
+                .parent()
+                .map(|p| p.display().to_string()),
+        )?)
+    }
+
     /// Return the filename extension of a path.
     pub fn extension(
         value: &Value,
@@ -60,12 +73,52 @@ pub mod filters {
     }
 }
 
+pub mod functions {
+
+    use itertools::Itertools;
+    use log::error;
+    use serde_json::to_value;
+    use serde_json::Value;
+    use std::collections::HashMap;
+
+    pub fn register_functions(tera: &mut tera::Tera) {
+        tera.register_function("glob", glob);
+    }
+
+    /// Return the filename extension of a path.
+    pub fn glob(args: &HashMap<String, Value>) -> tera::Result<Value> {
+        let paths = glob::glob(
+            args.get("glob")
+                .ok_or("No glob parameter.")?
+                .as_str()
+                .ok_or("Empty or non-string glob parameter.")?,
+        )
+        .map_err(|e| e.to_string())
+        .map(|paths| {
+            paths
+                .map(|p| match p {
+                    Ok(pb) => Ok(pb.display().to_string()),
+                    Err(e) => {
+                        error!("Could not list file: {}.", e.to_string());
+                        Err(e.to_string())
+                    }
+                })
+                .filter(|r| r.is_ok())
+                .map(|p| p.unwrap())
+                .collect_vec()
+        })?;
+
+        Ok(to_value(paths)?)
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
     use std::collections::HashMap;
 
     use crate::templates::filters;
+    use crate::templates::functions;
 
     #[test]
     fn extension() {
@@ -93,5 +146,25 @@ mod tests {
             filters::filename(&serde_json::to_value("/path/file").unwrap(), &map).unwrap(),
             serde_json::to_value("file").unwrap()
         )
+    }
+
+    #[test]
+    fn glob() {
+        let mut map: HashMap<String, serde_json::Value> = HashMap::new();
+        map.insert(
+            "glob".to_string(),
+            serde_json::to_value("test/resources/*.*").unwrap(),
+        );
+
+        assert_eq!(functions::glob(&map).unwrap().as_array().unwrap().len(), 7);
+    }
+
+    #[test]
+    fn directory() {
+        let map: HashMap<String, serde_json::Value> = HashMap::new();
+        assert_eq!(
+            filters::directory(&serde_json::to_value("/path/file.txt").unwrap(), &map).unwrap(),
+            serde_json::to_value("/path").unwrap()
+        );
     }
 }

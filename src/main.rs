@@ -115,7 +115,13 @@ enum Command {
         #[structopt(short, long)]
         /// Relative path to the root template, if more than one is found by the template glob expression.
         root_template: Option<String>,
-        /// Whether to write the template output to multiple files, split by the provided delimiter.
+        /// Whether to write the template output to multiple files, split by the provided delimiter. To
+        /// split files, the parser expects the delimiter and destination file name to be written to a
+        /// line in the template output. Using the default delimiter, an example might be:
+        ///     {% for file in filenames %}
+        ///     8<-- output/dir/{{file.output_file_name}}.md
+        ///     {{ file.content }}
+        ///     {% endfor %}
         #[structopt(long)]
         split_files: bool,
         /// Delimiter to search for in the template output to split files.
@@ -178,6 +184,7 @@ fn main() -> Result<(), Error> {
                     if let Some(template) = root_template {
                         // Add custom filters
                         templates::filters::register_filters(tera);
+                        templates::functions::register_functions(tera);
                         let (successes, _failures) = parse_files(globs);
                         let rendered_contents = render_template(tera, &template, successes);
                         if split_files {
