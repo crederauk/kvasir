@@ -1,17 +1,49 @@
-on: [push]
+on: [push, pull_request]
 
-name: CI
+name: Kvasir
 
 jobs:
-  build_and_test:
+  kvasir:
     name: Kvasir
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Checkout
+        uses: actions/checkout@v2
+        uses: actions-rs/toolchain@v1
+          with:
+            profile: minimal
+            toolchain: stable
+            override: true
+      - name: Check
+        uses: actions-rs/cargo@v1
+          with:
+            command: check
+      - name: Test
+        uses: actions-rs/cargo@v1
+          with:
+            command: test
+      - name: Format
+        run: rustup component add rustfmt
+        uses: actions-rs/cargo@v1
+          with:
+            command: fmt
+            args: --all -- --check
+      - name: Clippy
+        run: rustup component add clippy
+        uses: actions-rs/cargo@v1
+          with:
+            command: clippy
+            args: -- -D warnings
+      - name: Release Build
+        uses: actions-rs/cargo@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        run: cargo build --all --release && strip target/release/kvasir && mv target/release/kvasir target/release/kvasir_amd64
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --all-features
+          files: |
+            target/release/kvasir_amd64
+            LICENSE
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
