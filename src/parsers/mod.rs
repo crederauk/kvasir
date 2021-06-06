@@ -16,9 +16,15 @@
 
 use super::errors::*;
 use hocon::HoconLoader;
+use log::{trace, warn};
 use openapiv3::OpenAPI;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use sqlparser::dialect::{
+    Dialect, GenericDialect, HiveDialect, MsSqlDialect, MySqlDialect, PostgreSqlDialect,
+    SQLiteDialect,
+};
+use sqlparser::parser::{Parser, ParserError};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -57,6 +63,7 @@ pub fn parsers() -> Vec<Box<dyn FileParser>> {
         Box::new(IniParser {}),
         Box::new(XmlParser {}),
         Box::new(HoconParser {}),
+        Box::new(SqlParser {}),
     ]
 }
 
@@ -248,7 +255,61 @@ impl FileParser for HoconParser {
     }
 }
 
-// GRPC Parser
+/// File parser for SQL files.
+///
+/// This parser will iterate through different SQL parsers until a file is successfully
+/// parsed, returning an error if none of the parsers succeed.
+pub struct SqlParser {}
+impl FileParser for SqlParser {
+    fn name(&self) -> &'static str {
+        "sql"
+    }
+
+    fn can_parse(&self, path: &Path, #[allow(unused_variables)] contents: Result<&str>) -> bool {
+        has_extension(path, &["sql"])
+    }
+
+    fn parse(
+        &self,
+        #[allow(unused_variables)] path: &Path,
+        contents: Result<&str>,
+    ) -> Result<Value> {
+        let parsers: Vec<Box<dyn Dialect>> = vec![
+            Box::new(GenericDialect {}),
+            Box::new(PostgreSqlDialect {}),
+            Box::new(MySqlDialect {}),
+            Box::new(SQLiteDialect {}),
+            Box::new(MsSqlDialect {}),
+            Box::new(HiveDialect {}),
+        ];
+
+        let result = parsers
+            .iter()
+            .map(|dialect| {
+                trace!("  parsing with sql parser {:?}", dialect);
+                Parser::parse_sql(
+                    dialect.as_ref(),
+                    contents.as_ref().map_err(|_| {
+                        ParserError::ParserError("Could not read file contents.".to_string())
+                    })?,
+                )
+                .map_err(|e| {
+                    warn!("  parsing error: {}", e.to_string());
+                    e
+                })
+            })
+            .find(|p| p.is_ok())
+            .map(|f| match f {
+                Ok(statements) => Ok(serde_json::to_value(&statements)),
+                Err(e) => Err(e.to_string()),
+            })
+            .unwrap_or_else(|| bail!("Could not parse with any SQL parser dialects"));
+
+        Ok(result??)
+    }
+}
+
+// Protobuf Parser
 // CSV Parser
 
 #[cfg(test)]

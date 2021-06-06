@@ -523,6 +523,7 @@ dependencies = [
  "serde_ini",
  "serde_json",
  "serde_yaml",
+ "sqlparser",
  "structopt",
  "tera",
  "toml",
@@ -934,6 +935,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3bc762e6a4b6c6fcaade73e77f9ebc6991b676f88bb2358bddb56560f073373"
 dependencies = [
  "deunicode",
+]
+
+[[package]]
+name = "sqlparser"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fa863a2dfc4879a35647c51dadf495a2ad53745eaf3723fda27006e745fb0ba"
+dependencies = [
+ "log",
+ "serde",
 ]
 
 [[package]]

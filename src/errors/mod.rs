@@ -24,5 +24,6 @@ error_chain! {
         IniParse(serde_ini::de::Error);
         XmlParse(serde_xml_rs::Error);
         HoconParse(hocon::Error);
+        SqlError(sqlparser::parser::ParserError);
     }
 }

@@ -27,4 +27,4 @@ once_cell = "1.7.2"
 hocon = { version = "0.5.2", features = ["serde-support"], default-features = false }
 tera = { version = "1" }
 jsonpath_lib = "0.2.6"
-
+sqlparser = {version = "0.9.0", features = ["serde"] }
