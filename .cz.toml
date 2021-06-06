@@ -5,4 +5,4 @@ version = "0.2.0"
 tag_format = "$version"
 update_changelog_on_bump = true
 bump_message = "release: $current_version → $new_version"
-version_files = ["src/main.rs:version"]
+version_files = ["src/main.rs:version", "Cargo.toml:^version"]
