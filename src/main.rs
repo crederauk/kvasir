@@ -65,7 +65,7 @@ const LINE_ENDING: &str = "\r\n";
 const LINE_ENDING: &str = "\n";
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "kvasir", version = "0.1")]
+#[structopt(name = "kvasir", version = "0.1.0")]
 /// kvasir - source file parser and template generator
 ///
 /// kvasir is a tool for parsing structured text files into JSON format, either
