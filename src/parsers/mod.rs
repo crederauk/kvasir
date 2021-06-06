@@ -318,6 +318,6 @@ mod tests {
 
     #[test]
     fn available_parsers() {
-        assert_eq!(parsers::parsers().len(), 8)
+        assert_eq!(parsers::parsers().len(), crate::parsers::parsers().len())
     }
 }

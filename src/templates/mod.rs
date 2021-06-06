@@ -160,6 +160,7 @@ mod tests {
 
     use crate::templates::filters;
     use crate::templates::functions;
+    use itertools::Itertools;
 
     #[test]
     fn extension() {
@@ -197,7 +198,13 @@ mod tests {
             serde_json::to_value("test/resources/*.*").unwrap(),
         );
 
-        assert_eq!(functions::glob(&map).unwrap().as_array().unwrap().len(), 7);
+        assert_eq!(
+            functions::glob(&map).unwrap().as_array().unwrap().len(),
+            glob::glob("test/resources/*.*")
+                .unwrap()
+                .collect_vec()
+                .len()
+        );
     }
 
     #[test]
