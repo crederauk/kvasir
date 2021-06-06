@@ -13,6 +13,8 @@ pub mod filters {
         tera.register_filter("filename", filename);
         tera.register_filter("extension", extension);
         tera.register_filter("directory", directory);
+        tera.register_filter("parsed_by", parsed_by);
+        tera.register_filter("file", file);
     }
 
     /// Return a JSON value by applying the provided JSON path to the provided ihput value.
@@ -29,6 +31,45 @@ pub mod filters {
                     .ok_or("Empty or non-string path parameter.")?,
             )
             .map_err(|e| Error::msg(e.to_string()))?,
+        )?;
+
+        Ok(json)
+    }
+
+    /// Filter files for those parsed by the specified parser, provided in the `parser` argument.
+    ///
+    /// The hashmap must contain a key with the value "parser".
+    pub fn parsed_by(value: &Value, params: &HashMap<String, Value>) -> tera::Result<Value> {
+        let parser_name = params
+            .get("parser")
+            .ok_or("No parser parameter.")?
+            .as_str()
+            .ok_or("Empty or non-string parser parameter.")?;
+
+        let json = to_value(
+            jsonpath_lib::select(
+                &value,
+                format!("$.[?(@.parser=='{}')]", parser_name).as_str(),
+            )
+            .map_err(|e| Error::msg(e.to_string()))?,
+        )?;
+
+        Ok(json)
+    }
+
+    /// Filter files for the file with the specified path.
+    ///
+    /// The hashmap must contain a key with the value "path".
+    pub fn file(value: &Value, params: &HashMap<String, Value>) -> tera::Result<Value> {
+        let path = params
+            .get("path")
+            .ok_or("No path parameter.")?
+            .as_str()
+            .ok_or("Empty or non-string path parameter.")?;
+
+        let json = to_value(
+            jsonpath_lib::select(&value, format!("$.[?(@.path=='{}')]", path).as_str())
+                .map_err(|e| Error::msg(e.to_string()))?,
         )?;
 
         Ok(json)
