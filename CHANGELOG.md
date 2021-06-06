@@ -1,3 +1,10 @@
+## 0.2.0 (2021-06-06)
+
+### Feat
+
+- added new filters to enable filtering by parser and path
+- added new sql file parser
+
 ## 0.1.0 (2021-06-05)
 
 ### Feat
