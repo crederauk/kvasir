@@ -48,5 +48,7 @@ jobs:
           files: |
             target/release/kvasir_amd64
             LICENSE
+            CHANGELOG.md
+            README.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
