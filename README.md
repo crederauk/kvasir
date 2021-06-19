@@ -10,8 +10,8 @@ configuration and human-readable file formats such as YAML, XML, OpenAPI and JSO
 With the ability to parse these formats into a single structure, it's possible to
 generate more flexible output.
 
-It can be run directly or within CI/CD pipelines to generate and embed
-documentation into markdown files, READMEs or other documentation tools.
+It can be run directly or as a pre-processor within CI/CD pipelines to generate and
+embed documentation into markdown files, READMEs or other documentation tools.
 
 ## Motivation
 There are many documentation generation tools for projects, but most are either generic
@@ -41,7 +41,7 @@ Kvasir runs as a command-line application. Available commands can be listed with
 
 Examples:
 ```bash
-    # Parse multiple input files to JSON format and output to stdout
+    # Parse multiple input files to JSON and output to stdout
     kvasir parse --globs /path/to/**/*.yaml /path/to/**/*.xml
     
     # Parse multiple input files to JSON and format them with the specified templates
