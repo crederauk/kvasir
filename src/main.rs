@@ -248,7 +248,8 @@ fn write_rendered_files(entries: Vec<(PathBuf, String)>, allow_overwrite: bool) 
 ///
 /// The default base output directory is the current directory, chosen to avoid the
 /// possibility of overwriting abitrary files. All output files must be within the
-/// output directory or an error will be generated.
+/// output directory or an error will be generated. All content before the first split
+/// is ignored.
 fn split_template_content(
     delimiter: &str,
     contents: &str,
@@ -271,6 +272,7 @@ fn split_template_content(
         })
         .filter(|x| x.is_some())
         .map(|x| x.unwrap())
+        .filter(|x| &x.0 != &output_dir) // Remove anything before the first split
         .collect_vec();
 
     for (p, _) in files.iter() {
@@ -416,7 +418,10 @@ fn parse_file(f: &Path, parsers: &[Box<dyn FileParser>]) -> (Vec<ParseSuccess>, 
 #[cfg(test)]
 mod tests {
 
+    use std::str::FromStr;
+
     use crate::parsers;
+    use itertools::Itertools;
     use jsonpath_lib::select;
     use serde_json::json;
 
@@ -431,7 +436,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_files() {
+    fn test_parse_file() {
         let result = crate::parse_file(
             std::path::Path::new("test/resources/test.ini"),
             parsers::parsers().as_slice(),
@@ -454,6 +459,86 @@ mod tests {
             }
             _ => {
                 assert!(false) // Parsing should have succeeded
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_files() {
+        let result = crate::parse_files(vec!["test/resources/*.ini".to_string()]);
+
+        assert_eq!(result.0.len(), 1);
+        assert_eq!(result.1.len(), 0);
+
+        match result.0.as_slice() {
+            [success] => {
+                assert_eq!(success.parser, "ini");
+                assert_eq!(
+                    success.path,
+                    std::path::Path::new("test/resources/test.ini")
+                );
+                assert_eq!(
+                    select(&success.contents, "$.owner.name").unwrap()[0],
+                    &json!("John Doe")
+                );
+            }
+            _ => {
+                assert!(false) // Parsing should have succeeded
+            }
+        }
+    }
+
+    #[test]
+    fn base_template() {
+        let template_dir = "test/templates/*";
+        match tera::Tera::new(template_dir).as_mut() {
+            Ok(tera) => {
+                let root_template = crate::get_base_template(
+                    template_dir.to_string(),
+                    tera.get_template_names().collect_vec().as_slice(),
+                    Some("test/templates/base.tpl".to_string()),
+                );
+
+                assert_eq!(root_template.unwrap(), "test/templates/base.tpl");
+                assert_eq!(tera.get_template_names().collect_vec().as_slice().len(), 2);
+            }
+            _ => {
+                assert!(false)
+            }
+        }
+    }
+
+    #[test]
+    fn split_template_content() {
+        let splits = crate::split_template_content(
+            "8<--",
+            r#"
+        8<-- /tmp/one
+        a
+        8<--/tmp/two
+        b
+        8<--/tmp/three
+        c
+        d
+        "#,
+            std::path::PathBuf::from_str("/tmp").unwrap(),
+        );
+
+        assert!(splits.is_ok());
+
+        let file_splits = splits.unwrap();
+
+        println!("{:?}", &file_splits);
+        assert_eq!(file_splits.len(), 3);
+
+        match file_splits.as_slice() {
+            [one, two, three] => {
+                assert_eq!(one.0.to_str().unwrap(), "/tmp/one");
+                assert_eq!(two.0.to_str().unwrap(), "/tmp/two");
+                assert_eq!(three.0.to_str().unwrap(), "/tmp/three");
+            }
+            _ => {
+                assert!(false) // Three results should always be returned
             }
         }
     }

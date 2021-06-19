@@ -73,10 +73,7 @@
                     "kind": "bin"
                 }
             },
-            "args": [
-                "parse",
-                "test/resources/**.**"
-            ],
+            "args": [],
             "cwd": "${workspaceFolder}"
         },
         {
