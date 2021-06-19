@@ -426,7 +426,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn test_list_files() {
+    fn list_files() {
         assert_eq!(
             crate::list_files(vec!["test/resources/*.*".to_string()])
                 .0
@@ -542,8 +542,11 @@ mod tests {
         match file_splits.as_slice() {
             [one, two, three] => {
                 assert_eq!(one.0.to_str().unwrap(), "/tmp/one");
+                assert!(one.1.contains("a"));
                 assert_eq!(two.0.to_str().unwrap(), "/tmp/two");
+                assert!(two.1.contains("b"));
                 assert_eq!(three.0.to_str().unwrap(), "/tmp/three");
+                assert!(three.1.contains("d"));
             }
             _ => {
                 assert!(false) // Three results should always be returned
