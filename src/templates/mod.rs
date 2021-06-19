@@ -161,6 +161,7 @@ mod tests {
     use crate::templates::filters;
     use crate::templates::functions;
     use itertools::Itertools;
+    use serde_json::json;
 
     #[test]
     fn extension() {
@@ -214,5 +215,21 @@ mod tests {
             filters::directory(&serde_json::to_value("/path/file.txt").unwrap(), &map).unwrap(),
             serde_json::to_value("/path").unwrap()
         );
+    }
+
+    #[test]
+    fn json_path() {
+        let data = serde_json::json!({
+            "a": {
+                "b": {
+                    "c": [1, 2, 3]
+                }
+            }
+        });
+
+        let mut map: HashMap<String, serde_json::Value> = HashMap::new();
+        map.insert("path".to_string(), serde_json::to_value("$.a.b.c").unwrap());
+
+        assert_eq!(filters::json_path(&data, &map).unwrap(), json!([[1, 2, 3]]));
     }
 }

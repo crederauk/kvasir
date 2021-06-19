@@ -505,7 +505,7 @@ dependencies = [
 
 [[package]]
 name = "kvasir"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "env_logger 0.8.3",
  "error-chain",

@@ -412,3 +412,49 @@ fn parse_file(f: &Path, parsers: &[Box<dyn FileParser>]) -> (Vec<ParseSuccess>, 
 
     (parsed, errors)
 }
+
+#[cfg(test)]
+mod tests {
+
+    use crate::parsers;
+    use jsonpath_lib::select;
+    use serde_json::json;
+
+    #[test]
+    fn test_list_files() {
+        assert_eq!(
+            crate::list_files(vec!["test/resources/*.*".to_string()])
+                .0
+                .len(),
+            11
+        )
+    }
+
+    #[test]
+    fn test_parse_files() {
+        let result = crate::parse_file(
+            std::path::Path::new("test/resources/test.ini"),
+            parsers::parsers().as_slice(),
+        );
+
+        assert_eq!(result.0.len(), 1);
+        assert_eq!(result.1.len(), 0);
+
+        match result.0.as_slice() {
+            [success] => {
+                assert_eq!(success.parser, "ini");
+                assert_eq!(
+                    success.path,
+                    std::path::Path::new("test/resources/test.ini")
+                );
+                assert_eq!(
+                    select(&success.contents, "$.owner.name").unwrap()[0],
+                    &json!("John Doe")
+                );
+            }
+            _ => {
+                assert!(false) // Parsing should have succeeded
+            }
+        }
+    }
+}
