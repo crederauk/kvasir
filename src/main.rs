@@ -272,7 +272,7 @@ fn split_template_content(
         })
         .filter(|x| x.is_some())
         .map(|x| x.unwrap())
-        .filter(|x| &x.0 != &output_dir) // Remove anything before the first split
+        .filter(|x| x.0 != output_dir) // Remove anything before the first split
         .collect_vec();
 
     for (p, _) in files.iter() {
@@ -436,7 +436,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_file() {
+    fn parse_file() {
         let result = crate::parse_file(
             std::path::Path::new("test/resources/test.ini"),
             parsers::parsers().as_slice(),
@@ -464,7 +464,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_files() {
+    fn parse_files() {
         let result = crate::parse_files(vec!["test/resources/*.ini".to_string()]);
 
         assert_eq!(result.0.len(), 1);
@@ -486,6 +486,14 @@ mod tests {
                 assert!(false) // Parsing should have succeeded
             }
         }
+    }
+
+    #[test]
+    fn parse_all_files() {
+        let result = crate::parse_files(vec!["test/resources/*.*".to_string()]);
+
+        assert_eq!(result.0.len(), 7); // Successes
+        assert_eq!(result.1.len(), 6); // Failures
     }
 
     #[test]
