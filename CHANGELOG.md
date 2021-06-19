@@ -1,3 +1,9 @@
+## 0.2.2 (2021-06-19)
+
+### Fix
+
+- fixed bug where output could write to root output directory and addded unit tests
+
 ## 0.2.1 (2021-06-06)
 
 ## 0.2.0 (2021-06-06)
