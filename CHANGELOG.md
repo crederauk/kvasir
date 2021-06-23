@@ -1,3 +1,9 @@
+## 0.2.3 (2021-06-23)
+
+### Refactor
+
+- **main.rs**: fixed clippy warning and avoid potential panic
+
 ## 0.2.2 (2021-06-19)
 
 ### Fix
