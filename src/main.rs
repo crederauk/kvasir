@@ -270,8 +270,7 @@ fn split_template_content(
             }
             [] => None,
         })
-        .filter(|x| x.is_some())
-        .map(|x| x.unwrap())
+        .flatten()
         .filter(|x| x.0 != output_dir) // Remove anything before the first split
         .collect_vec();
 
