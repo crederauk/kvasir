@@ -1,3 +1,9 @@
+## 0.3.0 (2021-07-04)
+
+### Feat
+
+- enable specifying a template body using stdin rather than reading from a file
+
 ## 0.2.3 (2021-06-23)
 
 ### Refactor

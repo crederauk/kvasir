@@ -1,6 +1,6 @@
 [package]
 name = "kvasir"
-version = "0.2.3"
+version = "0.3.0"
 authors = ["Andrew James <andrew.james@credera.co.uk>"]
 edition = "2018"
 
