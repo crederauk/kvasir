@@ -110,7 +110,8 @@ enum Command {
         /// One or more glob path expressions to search for source files.
         sources: Vec<String>,
         #[structopt(short, long)]
-        /// A glob path expression to search for template files
+        /// A glob path expression to search for template files, or '-' if the template contents are to
+        /// be read from `stdin`.
         templates: String,
         #[structopt(short, long)]
         /// Relative path to the root template, if more than one is found by the template glob expression.
@@ -124,7 +125,7 @@ enum Command {
         ///     {% endfor %}
         #[structopt(long)]
         split_files: bool,
-        /// Delimiter to search for in the template output to split files.
+        /// Delimiter to search for in the template output to split files, defaulting to "8<--"
         #[structopt(long, default_value = "8<--")]
         split_delimiter: String,
         /// Root directory under which split output files are written. Defaults to the current directory.
@@ -174,7 +175,7 @@ fn main() -> Result<(), Error> {
             output_dir,
             allow_overwrite,
         } => {
-            match tera::Tera::new(templates.as_str()).as_mut() {
+            match create_tera_instance(templates.as_str()).as_mut() {
                 Ok(tera) => {
                     let root_template = get_base_template(
                         templates,
@@ -351,6 +352,21 @@ fn parse_files(globs: Vec<String>) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
     info!("{} parsers failed.", &failures.len());
 
     (successes, failures)
+}
+
+/// Return a new Tera instance with either a directory of templates or by reading a
+/// single template from `stdin`.
+fn create_tera_instance(templates: &str) -> Result<tera::Tera, tera::Error> {
+    use std::io::Read;
+    return if templates.eq("-") {
+        let mut buf = String::new();
+        std::io::stdin().read_to_string(&mut buf)?;
+        let mut tera = tera::Tera::default();
+        tera.add_raw_template("root", buf.as_str())?;
+        Ok(tera)
+    } else {
+        tera::Tera::new(templates)
+    };
 }
 
 /// Return a list of all unique paths that match one or more glob expressions.

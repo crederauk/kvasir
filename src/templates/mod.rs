@@ -9,11 +9,11 @@ pub mod filters {
 
     /// Register custom tera filters
     pub fn register_filters(tera: &mut tera::Tera) {
-        tera.register_filter("jsonPath", json_path);
+        tera.register_filter("jsonpath", json_path);
         tera.register_filter("filename", filename);
         tera.register_filter("extension", extension);
         tera.register_filter("directory", directory);
-        tera.register_filter("parsed_by", parsed_by);
+        tera.register_filter("parsedby", parsed_by);
         tera.register_filter("file", file);
     }
 

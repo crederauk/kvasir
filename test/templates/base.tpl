@@ -1,5 +1,5 @@
 ## All files
-{% for file in files|jsonPath(path="$.*") %}
+{% for file in files|jsonpath(path="$.*") %}
 8<-- output/{{file.parser}}
 {{- file.path }}
 my custom contents
@@ -15,11 +15,12 @@ File listing:
 {% endfor %}
 
 ## SQL files
-{% for file in files|parsed_by(parser="sql") -%}
+{% for file in files|parsedby(parser="sql") -%}
     {{file.path}}
 {% endfor %}
 
 
 # A specific file
-{% set f = files|file(path="test/resources/test.json") %}
-* {{ f.0.contents.fruit }} ({{ f.0.contents.size }})
+{% for f in files|file(path="test/resources/test.json") -%}
+* {{ f.contents.fruit }} ({{ f.contents.size }})
+{%- endfor -%}
