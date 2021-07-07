@@ -1,7 +1,7 @@
 
 # Kvasir
 
-![Build Status](https://github.com/crederauk/kvasir/actions/workflows/rust.yml/badge.svg)
+![Build Status](https://github.com/crederauk/kvasir/actions/workflows/rust.yaml/badge.svg)
 
 `kvasir` is a tool for parsing structured text files into JSON format, either
 outputting directly to stdout or processing the data through one or more templates
