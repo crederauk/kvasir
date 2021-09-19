@@ -57,6 +57,17 @@ projects, perhaps those that use a mono-repository and have many different types
 artefacts, using this approach means that a single, consistent set of documentation can
 be created with documentation for different types of artefacts interspersed.
 
+At present, Kvasir is able to parse the following file formats:
+* JSON
+* YAML
+* Properties
+* OpenAPI
+* TOML
+* INI
+* XML
+* HOCON
+* SQL
+
 ## Build status
 The `cargo` tool is used to build Kvasir, generating a standalone, statically-compiled binary
 that can be deployed into a container or build environment. Pre-compiled binaries can be found
