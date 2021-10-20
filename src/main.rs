@@ -291,7 +291,7 @@ fn split_template_content(
 fn render_template(tera: &tera::Tera, root_template: &str, successes: Vec<ParseSuccess>) -> String {
     let mut context = Context::new();
     context.insert("files", &successes);
-    tera.render(&root_template, &context).unwrap_or_else(|e| {
+    tera.render(root_template, &context).unwrap_or_else(|e| {
         error!("Could not render template: {:?}", e);
         "".to_string()
     })
@@ -473,7 +473,7 @@ mod tests {
                 );
             }
             _ => {
-                assert!(false) // Parsing should have succeeded
+                panic!("Parsing should have succeeded!")
             }
         }
     }
@@ -498,7 +498,7 @@ mod tests {
                 );
             }
             _ => {
-                assert!(false) // Parsing should have succeeded
+                panic!("Parsing should have succeeded!")
             }
         }
     }
@@ -526,7 +526,7 @@ mod tests {
                 assert_eq!(tera.get_template_names().collect_vec().as_slice().len(), 2);
             }
             _ => {
-                assert!(false)
+                panic!("Tera should have been created!")
             }
         }
     }
@@ -557,14 +557,14 @@ mod tests {
         match file_splits.as_slice() {
             [one, two, three] => {
                 assert_eq!(one.0.to_str().unwrap(), "/tmp/one");
-                assert!(one.1.contains("a"));
+                assert!(one.1.contains('a'));
                 assert_eq!(two.0.to_str().unwrap(), "/tmp/two");
-                assert!(two.1.contains("b"));
+                assert!(two.1.contains('b'));
                 assert_eq!(three.0.to_str().unwrap(), "/tmp/three");
-                assert!(three.1.contains("d"));
+                assert!(three.1.contains('d'));
             }
             _ => {
-                assert!(false) // Three results should always be returned
+                panic!("Three results should always be returned!")
             }
         }
     }

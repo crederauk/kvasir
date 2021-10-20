@@ -23,7 +23,7 @@ pub mod filters {
     pub fn json_path(value: &Value, params: &HashMap<String, Value>) -> tera::Result<Value> {
         let json = to_value(
             jsonpath_lib::select(
-                &value,
+                value,
                 params
                     .get("path")
                     .ok_or("No path parameter.")?
@@ -48,7 +48,7 @@ pub mod filters {
 
         let json = to_value(
             jsonpath_lib::select(
-                &value,
+                value,
                 format!("$.[?(@.parser=='{}')]", parser_name).as_str(),
             )
             .map_err(|e| Error::msg(e.to_string()))?,
@@ -68,7 +68,7 @@ pub mod filters {
             .ok_or("Empty or non-string path parameter.")?;
 
         let json = to_value(
-            jsonpath_lib::select(&value, format!("$.[?(@.path=='{}')]", path).as_str())
+            jsonpath_lib::select(value, format!("$.[?(@.path=='{}')]", path).as_str())
                 .map_err(|e| Error::msg(e.to_string()))?,
         )?;
 

@@ -100,7 +100,7 @@ impl FileParser for JsonParser {
         #[allow(unused_variables)] contents: Result<&str>,
     ) -> Result<Value> {
         let contents = fs::read_to_string(path)?;
-        Ok(serde_json::from_str(&contents.as_str())?)
+        Ok(serde_json::from_str(contents.as_str())?)
     }
 }
 
@@ -120,7 +120,7 @@ impl FileParser for YamlParser {
         #[allow(unused_variables)] path: &Path,
         contents: Result<&str>,
     ) -> Result<Value> {
-        Ok(serde_yaml::from_str(&contents?)?)
+        Ok(serde_yaml::from_str(contents?)?)
     }
 }
 
@@ -163,7 +163,7 @@ impl FileParser for OpenAPIParser {
         #[allow(unused_variables)] path: &Path,
         contents: Result<&str>,
     ) -> Result<Value> {
-        let api: OpenAPI = serde_json::from_str(&contents?)?;
+        let api: OpenAPI = serde_json::from_str(contents?)?;
         Ok(serde_json::to_value(api)?)
     }
 }
@@ -206,7 +206,7 @@ impl FileParser for IniParser {
         contents: Result<&str>,
     ) -> Result<Value> {
         Ok(serde_json::to_value(serde_ini::from_str::<Value>(
-            &contents?,
+            contents?,
         )?)?)
     }
 }
@@ -228,7 +228,7 @@ impl FileParser for XmlParser {
         contents: Result<&str>,
     ) -> Result<Value> {
         Ok(serde_json::to_value(serde_xml_rs::from_str::<Value>(
-            &contents?,
+            contents?,
         )?)?)
     }
 }
@@ -250,7 +250,7 @@ impl FileParser for HoconParser {
         contents: Result<&str>,
     ) -> Result<Value> {
         Ok(serde_json::to_value(
-            HoconLoader::new().load_str(&contents?)?.resolve()?,
+            HoconLoader::new().load_str(contents?)?.resolve()?,
         )?)
     }
 }
