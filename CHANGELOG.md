@@ -1,3 +1,13 @@
+## 0.3.1 (2021-10-20)
+
+### Refactor
+
+- fixed all new clippy errors
+
+### Fix
+
+- updated dependencies to latest versions
+
 ## 0.3.0 (2021-07-04)
 
 ### Feat
