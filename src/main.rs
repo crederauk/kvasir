@@ -107,7 +107,8 @@ enum Command {
     /// specified templates.
     Document {
         #[structopt(long)]
-        /// One or more glob path expressions to search for source files.
+        /// One or more glob path expressions to search for source files. Glob expressions
+        /// are defined within https://docs.rs/glob/latest/glob/struct.Pattern.html.
         sources: Vec<String>,
         #[structopt(short, long)]
         /// A glob path expression to search for template files, or '-' if the template contents are to
