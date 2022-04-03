@@ -249,7 +249,7 @@ fn write_rendered_files(entries: Vec<(PathBuf, String)>, allow_overwrite: bool) 
 /// specified delimiter.
 ///
 /// The default base output directory is the current directory, chosen to avoid the
-/// possibility of overwriting abitrary files. All output files must be within the
+/// possibility of overwriting arbitrary files. All output files must be within the
 /// output directory or an error will be generated. All content before the first split
 /// is ignored.
 fn split_template_content(
@@ -263,8 +263,7 @@ fn split_template_content(
 
     let files = contents
         .split(delimiter)
-        // Parse the destination path name and template contents
-        .map(|f| match f.lines().collect_vec().as_slice() {
+        .filter_map(|f| match f.lines().collect_vec().as_slice() {
             [first, remaining @ ..] => {
                 let of = Path::new(&output_dir).join(Path::new(first.trim())).clean();
 
@@ -272,7 +271,6 @@ fn split_template_content(
             }
             [] => None,
         })
-        .flatten()
         .filter(|x| x.0 != output_dir) // Remove anything before the first split
         .collect_vec();
 
@@ -436,7 +434,7 @@ mod tests {
 
     use std::str::FromStr;
 
-    use crate::parsers;
+    use crate::{parsers, ParseSuccess};
     use itertools::Itertools;
     use jsonpath_lib::select;
     use serde_json::json;
@@ -461,7 +459,11 @@ mod tests {
         assert_eq!(result.0.len(), 1);
         assert_eq!(result.1.len(), 0);
 
-        match result.0.as_slice() {
+        check_ini_file(&result.0);
+    }
+
+    fn check_ini_file(parse_successes: &[ParseSuccess]) {
+        match parse_successes {
             [success] => {
                 assert_eq!(success.parser, "ini");
                 assert_eq!(
@@ -486,22 +488,7 @@ mod tests {
         assert_eq!(result.0.len(), 1);
         assert_eq!(result.1.len(), 0);
 
-        match result.0.as_slice() {
-            [success] => {
-                assert_eq!(success.parser, "ini");
-                assert_eq!(
-                    success.path,
-                    std::path::Path::new("test/resources/test.ini")
-                );
-                assert_eq!(
-                    select(&success.contents, "$.owner.name").unwrap()[0],
-                    &json!("John Doe")
-                );
-            }
-            _ => {
-                panic!("Parsing should have succeeded!")
-            }
-        }
+        check_ini_file(&result.0);
     }
 
     #[test]
