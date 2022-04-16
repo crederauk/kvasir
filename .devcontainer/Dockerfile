@@ -4,7 +4,9 @@
 ARG VARIANT="buster"
 FROM mcr.microsoft.com/vscode/devcontainers/rust:0-${VARIANT}
 
-RUN cargo install cargo-edit --features vendored-openssl
+RUN cargo install cargo-edit --features vendored-openssl && \
+    cargo install cargo-chef && \
+    chown -R vscode /usr/local/cargo/registry/cache/
 
 # [Optional] Uncomment this section to install additional packages.
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
