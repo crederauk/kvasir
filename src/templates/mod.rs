@@ -144,8 +144,7 @@ pub mod functions {
                         Err(e.to_string())
                     }
                 })
-                .filter(|r| r.is_ok())
-                .map(|p| p.unwrap())
+                .filter_map(|p| p.ok())
                 .collect_vec()
         })?;
 

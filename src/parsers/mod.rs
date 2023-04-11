@@ -185,7 +185,7 @@ impl FileParser for TomlParser {
         contents: Result<&str>,
     ) -> Result<Value> {
         use toml::Value;
-        Ok(serde_json::to_value(&contents?.parse::<Value>()?)?)
+        Ok(serde_json::to_value(contents?.parse::<Value>()?)?)
     }
 }
 

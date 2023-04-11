@@ -357,7 +357,7 @@ fn parse_files(globs: Vec<String>) -> (Vec<ParseSuccess>, Vec<ParseFailure>) {
 /// single template from `stdin`.
 fn create_tera_instance(templates: &str) -> Result<tera::Tera, tera::Error> {
     use std::io::Read;
-    return if templates.eq("-") {
+    if templates.eq("-") {
         let mut buf = String::new();
         std::io::stdin().read_to_string(&mut buf)?;
         let mut tera = tera::Tera::default();
@@ -365,7 +365,7 @@ fn create_tera_instance(templates: &str) -> Result<tera::Tera, tera::Error> {
         Ok(tera)
     } else {
         tera::Tera::new(templates)
-    };
+    }
 }
 
 /// Return a list of all unique paths that match one or more glob expressions.

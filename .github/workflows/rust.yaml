@@ -7,8 +7,8 @@ jobs:
     name: Kvasir
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
         with:
           profile: minimal
           toolchain: stable
@@ -16,26 +16,12 @@ jobs:
           components: rustfmt, clippy
 
       - name: Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-      
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy -- -D warnings
+
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-      
-      - name: Format
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-      
-      - name: Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+        run: cargo test
       
       - name: Release Build
         if: startsWith(github.ref, 'refs/tags/')

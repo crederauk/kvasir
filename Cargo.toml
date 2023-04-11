@@ -32,5 +32,5 @@ sqlparser = {version = "0.9.0", features = ["serde"] }
 [profile.release]
 opt-level = 3 # Default optimisation level (set to 'z' to optimise for size)
 lto = true # Enable link-time optimisations
-codegen-units = 1 # Reduce parallelisation to increase opportunities to reduce sized
+codegen-units = 1 # Reduce parallelisation to increase opportunities to reduce size
 strip = true # Strip binaries of symbols
