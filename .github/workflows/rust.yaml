@@ -1,10 +1,10 @@
 on: [push, pull_request]
 
-name: Kvasir
+name: CI
 
 jobs:
   kvasir:
-    name: Kvasir
+    name: CI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -34,7 +34,6 @@ jobs:
           files: |
             target/release/kvasir_amd64
             LICENSE
-            CHANGELOG.md
             README.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
