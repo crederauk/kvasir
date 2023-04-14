@@ -3,6 +3,9 @@ name = "kvasir"
 version = "0.3.4"
 authors = ["Andrew James <andrew.james@credera.co.uk>"]
 edition = "2021"
+readme = "README.md"
+publish = false
+license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -34,3 +37,13 @@ opt-level = 3 # Default optimisation level (set to 'z' to optimise for size)
 lto = true # Enable link-time optimisations
 codegen-units = 1 # Reduce parallelisation to increase opportunities to reduce size
 strip = true # Strip binaries of symbols
+
+[package.metadata.release]
+allow-branch = ["main"]
+push = false
+publish = false
+pre-release-commit-message = "release: {{prev_version}} → {{version}}"
+tag-message = "release: {{crate_name}} version {{version}}"
+pre-release-replacements = [
+  {file="README.md", search="Current release: [a-z0-9\\.-]+", replace="Current release: {{version}}"} ,
+]
