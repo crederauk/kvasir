@@ -1,6 +1,6 @@
 [package]
 name = "kvasir"
-version = "0.3.5"
+version = "0.3.6"
 authors = ["Andrew James <andrew.james@credera.co.uk>"]
 edition = "2021"
 readme = "README.md"
