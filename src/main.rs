@@ -417,12 +417,17 @@ fn parse_file(f: &Path, parsers: &[Box<dyn FileParser>]) -> (Vec<ParseSuccess>, 
                 })
             }
             Err(e) => {
-                warn!("  failed parsing with {} ({}).", p.name(), e.to_string());
-                Either::Right(ParseFailure {
+                let failure = ParseFailure {
                     path: f.to_owned(),
                     parser: p.name().to_owned(),
                     error: e,
-                })
+                };
+                warn!(
+                    "  failed parsing with {} ({}).",
+                    &failure.parser,
+                    &failure.error.to_string()
+                );
+                Either::Right(failure)
             }
         });
 

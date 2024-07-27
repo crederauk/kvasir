@@ -75,9 +75,9 @@ pub struct ParseSuccess {
     pub contents: Value,
 }
 
-#[derive(Debug)]
 /// A failed file parsing result.
 pub struct ParseFailure {
+    #[allow(unused)]
     pub path: PathBuf,
     pub parser: String,
     pub error: Error, // Can't implement Serialize/Deserialize
